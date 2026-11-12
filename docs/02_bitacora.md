@@ -37,6 +37,13 @@ Formato: fecha · quién · qué se hizo · cómo · resultado · archivos. Una 
 - **Verificación del diseño en NumPy:** `tools/verificar_cadena_fsk.py` simula TX → canal → RX con los mismos parámetros (filtro, decimación, ganancia del demodulador, bloqueo de DC). Decodifica "COEL" con BER = 0 con error de frecuencia de 0, +15 y −30 kHz y SNR de banda ancha de 30 a −5 dB. No prueba el bloque *Clock Recovery MM* (aquí se muestrea al centro del bit).
 - **Cambio de parámetros:** el baud pasó de 10 000 a 2000 para que las relaciones con el audio de 48 kHz sean enteras (24 muestras por bit) y M1a/M1b/M3 se comparen al mismo baud. Carson = 52 kHz.
 
+### Entrada 7 — Primer enlace TX→RX real (HackRF + RTL-SDR, dos computadores)
+- **Fecha:** 2026-11-12 · **Configuración:** `tx_fsk.grc` en el PC del HackRF y `rx_fsk.grc` en el del RTL-SDR; 433.92 MHz, 2 Msps, 2000 baud, ±25 kHz. _(Completar: ganancias RF/IF del TX, ganancia del RX, ppm, distancia y antenas.)_
+- **Observación:** la constelación del RX muestra dos grupos limpios en −1 y +1 (Q = 0 porque en FSK demodulada se grafica solo la componente real).
+- **Decodificación** con `tools/decodificar_bits.py rx_bits.bin COEL`: 1 859 183 bits leídos (proporción de unos = 0.471), 26 684 tramas con sincronía, primer mensaje `'COEL'`, 26 416 tramas sin error (99.0 %), **BER = 1.33·10⁻³**.
+- **Alcance de la cifra:** el BER se calcula solo sobre las tramas cuya sincronía se detectó; las tramas con la sincronía dañada no se cuentan, así que es una cota inferior del BER real.
+- **Errores en el uso:** el primer intento falló porque `decodificar_bits.py` no estaba en la carpeta del Escritorio; se copió y funcionó.
+
 ## Plantilla para entradas del laboratorio
 
 ```
@@ -54,9 +61,8 @@ Formato: fecha · quién · qué se hizo · cómo · resultado · archivos. Una 
 
 | Entrada | Fecha | Integrante | Actividad | Estado |
 |---|---|---|---|---|
-| 7 | | | Abrir y probar `tx_fsk.grc` con HackRF | pendiente |
-| 8 | | | Abrir y probar `rx_fsk.grc` con RTL-SDR | pendiente |
-| 9 | | | M1a/M1b osciloscopio | pendiente |
-| 10 | | | Transmisión y recepción | pendiente |
-| 11 | | | M2/M3 osciloscopio | pendiente |
-| 12 | | | Potencia y ancho de banda | pendiente |
+| 7 | 2026-11-12 | | Primer enlace TX→RX y decodificación (BER 1.33e-3) | hecho |
+| 8 | | | M1a/M1b osciloscopio | pendiente |
+| 9 | | | M2/M3 osciloscopio | pendiente |
+| 10 | | | Capturas IQ, potencia y ancho de banda | pendiente |
+| 11 | | | Repetir con otra condición (otro baud o desviación) | pendiente |
