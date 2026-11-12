@@ -1,6 +1,6 @@
 # 01 · Plan paso a paso del laboratorio
 
-Parámetros propuestos (confirmar, ver `00_revision_guia.md` §3): **FSK binaria**, portadora **433.92 MHz**, mensaje de texto ASCII ("COEL" + nombre del grupo), 3 h de laboratorio.
+Parámetros propuestos (confirmar, ver `00_revision_guia.md` §3): **FSK binaria**, portadora **433.92 MHz**, **2000 baud**, desviación **±25 kHz**, muestreo **2 Msps**, mensaje de texto ASCII ("COEL" + nombre del grupo), 3 h de laboratorio.
 
 ## 0. Reparto de roles (trabajo colaborativo)
 
@@ -19,17 +19,18 @@ Con 3 integrantes: A+E, B+C, D. Cada cambio se registra en la bitácora y se hac
 1. Leer los temas: CPFSK, MSK, características espectrales, CPM (guía p. 2).
 2. Abrir `notebooks/Modulacion_FSK.ipynb` y `Modulacion_QAM.ipynb` en VS Code (extensión *Jupyter*; para Colab, ver README) y ejecutar todas las celdas. Guardar las gráficas.
 3. Instalar GNU Radio 3.10 (o 3.7), driver del HackRF (`hackrf_info` debe listar el dispositivo) y del RTL-SDR (Zadig, driver WinUSB). Probar `rtl_test`.
-4. Calcular con la regla de Carson el ancho de banda esperado: `B ≈ 2(Δf + Rb/2)`. Con Δf = 25 kHz y Rb = 10 kbaud ⇒ **60 kHz** (valor ya usado en `Analisis_mediciones_SDR`).
+4. Calcular con la regla de Carson el ancho de banda esperado: `B ≈ 2(Δf + Rb/2)`. Con Δf = 25 kHz y Rb = 2 kbaud ⇒ **52 kHz** (valor usado en `Analisis_mediciones_SDR`; la simulación da 51.8 kHz a −3 dB).
 5. Preparar los bits: ASCII del mensaje (`COEL` = 01000011 01001111 01000101 01001100).
 
 ## 2. Durante el laboratorio
 
 ### Fase 1 — Banda base y modulación en GNU Radio (≈ 40 min)
 
-1. **Flujograma TX (Fig. 2 de la guía):** *Vector Source* (bits del mensaje, *Repeat* = Yes) → *Repeat* (interpolación = muestras por bit) → *UChar To Float* → *GFSK Mod* o *Frequency Mod* (sensibilidad = 2π·Δf/fs) → *Throttle* → *QT GUI Time Sink* y *QT GUI Frequency Sink* → *Osmocom Sink* (`hackrf`).
-   - `samp_rate` = 2 Msps; frecuencia = 433.92 MHz; ganancia RF = 0 (sin amplificador), IF = 0–16 dB al inicio.
+1. **Flujograma TX (Fig. 2 de la guía)** — ya generado en `grc/tx_fsk.grc` (abrir en GNU Radio Companion y comprobar que no haya bloques en rojo): *Vector Source* (bits del mensaje, *Repeat* = Yes) → *Repeat* (interpolación = muestras por bit) → *UChar To Float* → *GFSK Mod* o *Frequency Mod* (sensibilidad = 2π·Δf/fs) → *Throttle* → *QT GUI Time Sink* y *QT GUI Frequency Sink* → *Osmocom Sink* (`hackrf`).
+   - `samp_rate` = 2 Msps; frecuencia = 433.92 MHz; ganancia RF = 0 (sin amplificador), IF = 0 dB al inicio y subir de a poco. El mensaje lleva preámbulo `0xAA 0xAA`, sincronía `0x2D 0xD4` y el texto ASCII.
+   - Se usó *Frequency Modulator* en lugar de *GFSK Mod* para controlar la desviación (±25 kHz) y que la señal NRZ de M1a sea visible en el flujograma.
 2. **Primer punto de medición con osciloscopio — ver §3, punto M1.**
-3. **Flujograma RX:** *Osmocom Source* (`rtl=0`) → *Low Pass Filter* (corte ≈ 40 kHz) → *Quadrature Demod* → *Clock Recovery MM* → *Binary Slicer* → *QT GUI Time Sink / Constellation Sink* y archivo (*File Sink*).
+3. **Flujograma RX** — ya generado en `grc/rx_fsk.grc`: *Osmocom Source* (`rtl=0`) → *Low Pass Filter* (corte = 2·Δf + baud + 10 kHz, decimación 10) → *Quadrature Demod* → *DC Blocker* (quita el error de frecuencia RTL vs. HackRF) → *Clock Recovery MM* → *Binary Slicer* → *File Sink* (`rx_bits.bin`); espectro, constelación y salida de audio (M3) por ramas. El deslizador de *ppm* sirve para centrar los lóbulos del espectro.
 4. Sin transmitir aún: comprobar con el RTL-SDR que el espectro del canal esté libre (*Frequency Sink*).
 
 ### Fase 2 — Transmisión y recepción (≈ 50 min)
@@ -48,7 +49,7 @@ Con 3 integrantes: A+E, B+C, D. Cada cambio se registra en la bitácora y se hac
 11. Repetir con una segunda condición (p. ej. otra desviación Δf o baud) para tener comparación en el informe.
 
 ### Fase 4 — Python/Colab (≈ 30 min si ya se trabajó antes)
-12. Subir los `.ipynb` a Colab (`colab.research.google.com` → Archivo → Subir) y ejecutar; verificar que no hay errores. Guardar el enlace en el informe.
+12. (Opcional) validar de antemano el diseño con `py tools/verificar_cadena_fsk.py`. Subir los `.ipynb` a Colab (`colab.research.google.com` → Archivo → Subir) y ejecutar; verificar que no hay errores. Guardar el enlace en el informe.
 
 ## 3. Puntos de medición con osciloscopio (qué, dónde y por qué)
 
@@ -56,8 +57,8 @@ La guía exige ver las señales sin modular, moduladas y el mensaje demodulado. 
 
 | Punto | Qué se mide | Dónde se conecta | Por qué | Configuración sugerida |
 |---|---|---|---|---|
-| **M1a** | **Mensaje sin modular** (bits NRZ) | Salida de audio/DAC del PC (*Audio Sink* con el vector de bits como señal) o generador de funciones con la misma secuencia | Pto. 3 de la guía: señal sin modular; referencia de temporización | Escala: 1 V/div; base de tiempo: ≈ 1 bit/div (10 kbaud ⇒ 100 µs/div; 100 baud ⇒ 10 ms/div); disparo por flanco |
-| **M1b** | **Señal modulada FSK** antes de transmitir | Misma salida de audio, con FSK a **tonos de audio** (1 kHz / 2 kHz, baud 100) — la versión del cuaderno `Modulacion_FSK` (archivo `data/mensaje_fsk.wav`) | Pto. 3: ver la modulada. Una portadora de 433.92 MHz no es visible en un osciloscopio de < 500 MHz de BW; la versión escalada muestra la misma morfología (dos frecuencias según el bit) | 0.5 V/div; 2 ms/div; mostrar los cambios de frecuencia en cada bit |
+| **M1a** | **Mensaje sin modular** (bits NRZ) | Canal **izquierdo** de la tarjeta de sonido ejecutando `grc/audio_osciloscopio.grc` (reproduce `data/mensaje_osciloscopio.wav`) o un generador de funciones con la misma secuencia | Pto. 3 de la guía: señal sin modular; referencia de temporización | Escala: 0.5 V/div; 2 kbaud ⇒ 500 µs/bit, base de tiempo 500 µs/div; disparo por flanco |
+| **M1b** | **Señal modulada FSK** antes de transmitir | Canal **derecho** de la misma salida de audio, con FSK a **tonos de audio** (6 kHz / 12 kHz, 2000 baud), generada por el cuaderno `Modulacion_FSK` (mismo baud y mismos bits que el enlace SDR) | Pto. 3: ver la modulada. Una portadora de 433.92 MHz no es visible en un osciloscopio de < 500 MHz de BW; la versión escalada muestra la misma morfología (dos frecuencias según el bit) | 0.5 V/div; 500 µs/div; 3 ciclos (bit 0) o 6 ciclos (bit 1) por bit. Con doble canal se ven M1a y M1b a la vez |
 | **M1c** *(opcional si BW ≥ 1 GHz)* | Portadora RF modulada a 433.92 MHz | Salida del HackRF con atenuador de 20–30 dB hacia el canal 50 Ω del osciloscopio | Ver la RF real | 50 Ω; 1 µs/div (se ve la portadora, no los bits) |
 | **M2** | **Potencia y espectro de TX** | Mismo punto que M1c con función FFT (o analizador de espectro) | Análisis 2: potencia y ancho de banda transmitido en dBm absolutos (el SDR solo da dBFS) | Centro 433.92 MHz, span 200 kHz, RBW 1 kHz |
 | **M3** | **Mensaje demodulado** | Salida de audio del PC con la señal recuperada (*Audio Sink* en el flujograma RX tras el *Binary Slicer*) | Pto. 5: comparar el mensaje recuperado con M1a (misma secuencia, retardo y forma) | Mismos ajustes que M1a, canal 2 del osciloscopio para superponer con M1a si se tiene doble canal |

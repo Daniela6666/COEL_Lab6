@@ -1,0 +1,139 @@
+options:
+  parameters:
+    author: ''
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: audio_osciloscopio
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: Audio para osciloscopio (M1a y M1b)
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 8
+    - 8
+blocks:
+- name: fs_audio
+  id: variable
+  parameters:
+    value: '48000'
+    comment: Muestreo de audio
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 200
+    - 12
+- name: wav
+  id: blocks_wavfile_source
+  parameters:
+    file: '"../data/mensaje_osciloscopio.wav"'
+    nchan: '2'
+    repeat: 'True'
+    norm: 'False'
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    comment: 'Canal izq.: bits NRZ (M1a). Canal der.: FSK en audio (M1b)'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 40
+    - 200
+- name: audio_out
+  id: audio_sink
+  parameters:
+    samp_rate: fs_audio
+    device_name: '""'
+    ok_to_block: 'True'
+    num_inputs: '2'
+    affinity: ''
+    alias: ''
+    comment: Salida de la tarjeta de sonido hacia el osciloscopio
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 320
+    - 200
+- name: vista
+  id: qtgui_time_sink_x
+  parameters:
+    name: '"Vista previa (izq=NRZ, der=FSK)"'
+    type: float
+    nconnections: '2'
+    size: '2048'
+    srate: fs_audio
+    ymin: '-1.2'
+    ymax: '1.2'
+    update_time: '0.1'
+    gui_hint: ''
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_level: '0'
+    tr_delay: '0'
+    tr_chan: '0'
+    tr_tag: '""'
+    autoscale: 'False'
+    grid: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 320
+    - 340
+connections:
+- - wav
+  - '0'
+  - audio_out
+  - '0'
+- - wav
+  - '1'
+  - audio_out
+  - '1'
+- - wav
+  - '0'
+  - vista
+  - '0'
+- - wav
+  - '1'
+  - vista
+  - '1'
+metadata:
+  file_format: 1
+  grc_version: 3.10.9.2

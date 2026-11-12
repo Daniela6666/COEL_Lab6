@@ -10,6 +10,8 @@ Guía: `guia/Guía laboratorio modulacion digital COEL.pdf`.
 | `docs/02_bitacora.md` | Bitácora (qué, cómo, resultado) |
 | `docs/03_informe.md` | Plantilla del informe |
 | `notebooks/` | `Modulacion_FSK`, `Modulacion_QAM`, `Analisis_mediciones_SDR` (.ipynb, compatibles con Colab) |
+| `grc/` | Flujogramas de GNU Radio (TX HackRF, RX RTL-SDR, audio para osciloscopio) |
+| `tools/` | `generar_grc.py` (regenera los `.grc`) y `verificar_cadena_fsk.py` (simula la cadena TX→RX) |
 | `figures/` | Gráficas generadas por los cuadernos (y `osciloscopio/` para fotos) |
 | `data/` | `.wav` de los mensajes; `mediciones/` para capturas IQ y CSV |
 
