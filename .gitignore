@@ -1,0 +1,5 @@
+*.cfile
+*.iq
+*.raw
+__pycache__/
+.ipynb_checkpoints/
