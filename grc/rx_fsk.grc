@@ -104,6 +104,169 @@ blocks:
     coordinate:
     - 800
     - 12
+- name: nombre_prueba
+  id: variable
+  parameters:
+    value: '"prueba01"'
+    comment: CAMBIAR en cada corrida para no sobrescribir los archivos
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 200
+    - 700
+- name: carpeta
+  id: variable
+  parameters:
+    value: '(lambda p: (os.makedirs(p, exist_ok=True), p)[1])(os.path.join(os.path.expanduser("~"),
+      "lab6_pruebas", nombre_prueba))'
+    comment: 'Carpeta de salida: C:/Users/<usuario>/lab6_pruebas/<nombre_prueba>'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 400
+    - 700
+- name: duracion_captura
+  id: variable
+  parameters:
+    value: '5'
+    comment: Segundos de IQ guardados
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 600
+    - 700
+- name: imports_registro
+  id: import
+  parameters:
+    imports: 'import os
+
+      import time
+
+      import atexit
+
+      import math'
+    comment: ''
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 760
+    - 700
+- name: snippet_datos
+  id: snippet
+  parameters:
+    section: main_after_init
+    priority: '0'
+    code: "def _valores():\n    return (f\"  Ganancia RF [dB]: {tb.rf_gain}\\n\"\n\
+      \            f\"  Ganancia IF [dB]: {tb.if_gain}\\n\"\n            f\"  Ganancia\
+      \ BB [dB]: {tb.bb_gain}\\n\"\n            f\"  Correccion de frecuencia [ppm]:\
+      \ {tb.ppm}\\n\")\n_inicio = _valores()\ndef _guardar_datos():\n    with open(os.path.join(tb.carpeta,\
+      \ \"datos_de_la_prueba.txt\"), \"w\", encoding=\"utf-8\") as f:\n        f.write(\"\
+      Prueba: \" + str(tb.nombre_prueba) + \"\\n\")\n        f.write(\"Lado: RX (RTL-SDR)\\\
+      n\")\n        f.write(\"Fecha y hora de inicio: \" + _t0 + \"\\n\")\n      \
+      \  f.write(f\"Frecuencia de muestreo [Hz]: {tb.samp_rate}\\n\")\n        f.write(f\"\
+      Frecuencia central [Hz]: {tb.freq}\\n\")\n        f.write(f\"Baud: {tb.baud}\\\
+      n\")\n        f.write(f\"Desviacion de frecuencia [Hz]: {tb.dev}\\n\")\n   \
+      \     f.write(\"Valores al iniciar:\\n\" + _inicio)\n        f.write(\"Valores\
+      \ al terminar (los deslizadores pueden haber cambiado):\\n\" + _valores())\n\
+      \        f.write(f\"Duracion de la captura IQ [s]: {tb.duracion_captura}\\n\"\
+      )\n        f.write(\"Archivos: rx.cfile (IQ recibido), rx_bits.bin (bits decodificados),\
+      \ datos_de_la_prueba.txt\\n\")\n_t0 = time.strftime(\"%Y-%m-%d %H:%M:%S\")\n\
+      _guardar_datos()\natexit.register(_guardar_datos)\nprint(\"Archivos de la prueba\
+      \ en:\", tb.carpeta)"
+    comment: Escribe datos_de_la_prueba.txt al iniciar y al terminar
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 920
+    - 700
+- name: if_gain
+  id: variable
+  parameters:
+    value: '20'
+    comment: Ganancia IF del RTL-SDR [dB]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 760
+    - 80
+- name: bb_gain
+  id: variable
+  parameters:
+    value: '20'
+    comment: Ganancia BB del RTL-SDR [dB]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 900
+    - 80
+- name: captura_head
+  id: blocks_head
+  parameters:
+    type: complex
+    num_items: int(samp_rate*duracion_captura)
+    vlen: '1'
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    comment: Limita la grabacion a duracion_captura s
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 260
+    - 540
+- name: archivo_rx
+  id: blocks_file_sink
+  parameters:
+    file: carpeta + "/rx.cfile"
+    type: complex
+    vlen: '1'
+    append: 'False'
+    unbuffered: 'False'
+    affinity: ''
+    alias: ''
+    comment: IQ recibido (2 Msps, antes de filtrar)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 460
+    - 540
 - name: decim
   id: variable
   parameters:
@@ -191,28 +354,14 @@ blocks:
     coordinate:
     - 640
     - 150
-- name: import_math
-  id: import
-  parameters:
-    imports: import math
-    comment: ''
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    rotation: 0
-    state: enabled
-    coordinate:
-    - 200
-    - 150
 - name: rtl
   id: osmosdr_source
   parameters:
     args: '"rtl=0"'
     freq0: freq
     gain0: rf_gain
-    if_gain0: '20'
-    bb_gain0: '20'
+    if_gain0: if_gain
+    bb_gain0: bb_gain
     bw0: '0'
     corr0: ppm
     sample_rate: samp_rate
@@ -342,7 +491,7 @@ blocks:
 - name: archivo_bits
   id: blocks_file_sink
   parameters:
-    file: '"rx_bits.bin"'
+    file: carpeta + "/rx_bits.bin"
     type: byte
     vlen: '1'
     append: 'False'
@@ -543,6 +692,14 @@ connections:
 - - decisor
   - '0'
   - archivo_bits
+  - '0'
+- - rtl
+  - '0'
+  - captura_head
+  - '0'
+- - captura_head
+  - '0'
+  - archivo_rx
   - '0'
 metadata:
   file_format: 1

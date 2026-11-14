@@ -1,9 +1,9 @@
 """Genera los flujogramas de GNU Radio Companion (formato YAML de GRC 3.10) en grc/.
 
-Uso:  py tools/generar_grc.py
+Uso:  py tools/generar_grc.py [MENSAJE]      (por defecto COEL; solo cambia el contenido de tx_fsk.grc)
 Los parámetros están arriba para cambiarlos en un solo sitio (deben coincidir con tools/verificar_cadena_fsk.py).
 """
-import os, yaml
+import os, sys, yaml
 
 GRC_VERSION = "3.10.9.2"
 OUT = os.path.join(os.path.dirname(__file__), "..", "grc")
@@ -13,7 +13,8 @@ SAMP_RATE = 2_000_000
 BAUD = 2_000
 DEV = 25_000
 FREQ = 433_920_000
-MENSAJE = "COEL"
+MENSAJE = sys.argv[1] if len(sys.argv) > 1 else "COEL"   # py tools/generar_grc.py HOLA  (solo ASCII)
+assert MENSAJE.isascii() and 1 <= len(MENSAJE) <= 32, "Use 1 a 32 caracteres ASCII (sin tildes ni ñ)"
 DATOS = bytes([0xAA, 0xAA, 0x2D, 0xD4]) + MENSAJE.encode()           # preámbulo + sincronía + texto
 BITS = [(b >> i) & 1 for b in DATOS for i in range(7, -1, -1)]
 # -------------------------------------------------------
@@ -56,10 +57,57 @@ def variables(x0=200):
         blk("sps", "variable", x0+600, 12, value="int(samp_rate/baud)", comment="Muestras por bit"),
     ]
 
+DURACION_CAPTURA = 5   # s de IQ que se guardan en tx.cfile / rx.cfile (a 2 Msps son 16 MB/s: 5 s = 80 MB)
+
+def registro(lado, archivos, imports="", x0=200, y0=700):
+    """Bloques comunes de registro: carpeta de la prueba, duración de captura, datos_de_la_prueba.txt.
+    La carpeta es ~/lab6_pruebas/<nombre_prueba> (se crea sola). Cambiar nombre_prueba en cada corrida."""
+    codigo = f'''def _valores():
+    return (f"  Ganancia RF [dB]: {{tb.rf_gain}}\\n"
+            f"  Ganancia IF [dB]: {{tb.if_gain}}\\n"
+            f"  Ganancia BB [dB]: {{tb.bb_gain}}\\n"
+            f"  Correccion de frecuencia [ppm]: {{tb.ppm}}\\n")
+_inicio = _valores()
+def _guardar_datos():
+    with open(os.path.join(tb.carpeta, "datos_de_la_prueba.txt"), "w", encoding="utf-8") as f:
+        f.write("Prueba: " + str(tb.nombre_prueba) + "\\n")
+        f.write("Lado: {lado}\\n")
+        f.write("Fecha y hora de inicio: " + _t0 + "\\n")
+        f.write(f"Frecuencia de muestreo [Hz]: {{tb.samp_rate}}\\n")
+        f.write(f"Frecuencia central [Hz]: {{tb.freq}}\\n")
+        f.write(f"Baud: {{tb.baud}}\\n")
+        f.write(f"Desviacion de frecuencia [Hz]: {{tb.dev}}\\n")
+        f.write("Valores al iniciar:\\n" + _inicio)
+        f.write("Valores al terminar (los deslizadores pueden haber cambiado):\\n" + _valores())
+        f.write(f"Duracion de la captura IQ [s]: {{tb.duracion_captura}}\\n")
+        f.write("Archivos: {archivos}\\n")
+_t0 = time.strftime("%Y-%m-%d %H:%M:%S")
+_guardar_datos()
+atexit.register(_guardar_datos)
+print("Archivos de la prueba en:", tb.carpeta)'''
+    return [
+        blk("nombre_prueba", "variable", x0, y0, value='"prueba01"',
+            comment="CAMBIAR en cada corrida para no sobrescribir los archivos"),
+        blk("carpeta", "variable", x0+200, y0,
+            value='(lambda p: (os.makedirs(p, exist_ok=True), p)[1])(os.path.join(os.path.expanduser("~"), "lab6_pruebas", nombre_prueba))',
+            comment="Carpeta de salida: C:/Users/<usuario>/lab6_pruebas/<nombre_prueba>"),
+        blk("duracion_captura", "variable", x0+400, y0, value=DURACION_CAPTURA, comment="Segundos de IQ guardados"),
+        blk("imports_registro", "import", x0+560, y0, imports="import os\nimport time\nimport atexit" + imports, comment=""),
+        blk("snippet_datos", "snippet", x0+720, y0, section="main_after_init", priority=0, code=codigo,
+            comment="Escribe datos_de_la_prueba.txt al iniciar y al terminar"),
+    ]
+
 # =================== TX: HackRF ===================
 def tx():
     b = variables()
+    b += registro("TX (HackRF)", "tx.cfile (IQ transmitido), datos_de_la_prueba.txt")
     b += [
+        blk("bb_gain", "variable", 760, 80, value=20, comment="Ganancia BB del HackRF [dB]"),
+        blk("ppm", "variable", 900, 80, value=0, comment="Correccion de frecuencia del HackRF [ppm]"),
+        blk("captura_head", "blocks_head", 1520, 360, type="complex", num_items="int(samp_rate*duracion_captura)",
+            vlen=1, affinity="", alias="", maxoutbuf=0, minoutbuf=0, comment="Limita la grabacion a duracion_captura s"),
+        blk("archivo_tx", "blocks_file_sink", 1720, 360, file='carpeta + "/tx.cfile"', type="complex", vlen=1,
+            append="False", unbuffered="False", affinity="", alias="", comment="IQ enviado al HackRF"),
         blk("mensaje_bits", "variable", 200, 80, value=BITS,
             comment=f"Preámbulo 0xAA 0xAA, sincronía 0x2D 0xD4 y texto ASCII '{MENSAJE}'"),
         blk("rf_gain", "variable_qtgui_range", 560, 80, label="Ganancia RF (TX amp) [dB]", gui_hint="",
@@ -83,8 +131,9 @@ def tx():
         blk("amplitud", "blocks_multiply_const_vxx", 1300, 260, type="complex", const=0.5, vlen=1, affinity="",
             alias="", maxoutbuf=0, minoutbuf=0, comment="Margen frente a la saturación del DAC"),
         blk("hackrf", "osmosdr_sink", 1520, 240, args="hackrf", freq0="freq", gain0="rf_gain", if_gain0="if_gain",
-            bb_gain0=20, bw0=0, sample_rate="samp_rate", nchan=1, type="fc32", clock_source0="",
-            sync="", num_mboards=1, affinity="", alias="", comment="HackRF One (argumento 'hackrf' segun la guia)"),
+            bb_gain0="bb_gain", corr0="ppm", bw0=0, sample_rate="samp_rate", nchan=1, type="fc32",
+            clock_source0="", sync="", num_mboards=1, affinity="", alias="",
+            comment="HackRF One (argumento 'hackrf' segun la guia)"),
         blk("espectro_tx", "qtgui_freq_sink_x", 1300, 420, name='"Espectro TX"', type="complex", bw="samp_rate",
             fc="freq", fftsize=2048, wintype="window.WIN_BLACKMAN_hARRIS", average=0.2, nconnections=1,
             showports="False", update_time=0.1, gui_hint="", comment="Verificar los dos lóbulos de FSK"),
@@ -95,13 +144,22 @@ def tx():
     ]
     c = [("fuente", 0, "repetir", 0), ("repetir", 0, "a_float", 0), ("a_float", 0, "centrar", 0),
          ("centrar", 0, "bipolar", 0), ("bipolar", 0, "modulador_fm", 0), ("bipolar", 0, "tiempo_nrz", 0),
-         ("modulador_fm", 0, "amplitud", 0), ("amplitud", 0, "hackrf", 0), ("amplitud", 0, "espectro_tx", 0)]
+         ("modulador_fm", 0, "amplitud", 0), ("amplitud", 0, "hackrf", 0), ("amplitud", 0, "espectro_tx", 0),
+         ("amplitud", 0, "captura_head", 0), ("captura_head", 0, "archivo_tx", 0)]
     escribir("tx_fsk.grc", "tx_fsk", "TX FSK - HackRF", b, c)
 
 # =================== RX: RTL-SDR ===================
 def rx():
     b = variables()
+    b += registro("RX (RTL-SDR)", "rx.cfile (IQ recibido), rx_bits.bin (bits decodificados), datos_de_la_prueba.txt",
+                  imports="\nimport math")
     b += [
+        blk("if_gain", "variable", 760, 80, value=20, comment="Ganancia IF del RTL-SDR [dB]"),
+        blk("bb_gain", "variable", 900, 80, value=20, comment="Ganancia BB del RTL-SDR [dB]"),
+        blk("captura_head", "blocks_head", 260, 540, type="complex", num_items="int(samp_rate*duracion_captura)",
+            vlen=1, affinity="", alias="", maxoutbuf=0, minoutbuf=0, comment="Limita la grabacion a duracion_captura s"),
+        blk("archivo_rx", "blocks_file_sink", 460, 540, file='carpeta + "/rx.cfile"', type="complex", vlen=1,
+            append="False", unbuffered="False", affinity="", alias="", comment="IQ recibido (2 Msps, antes de filtrar)"),
         blk("decim", "variable", 200, 80, value=10, comment="Decimación del filtro de canal"),
         blk("fs_dec", "variable", 330, 80, value="samp_rate//decim", comment="Muestreo tras decimar"),
         blk("sps_dec", "variable", 480, 80, value="fs_dec/baud", comment="Muestras por bit tras decimar"),
@@ -111,9 +169,8 @@ def rx():
         blk("ppm", "variable_qtgui_range", 640, 150, label="Corrección de frecuencia [ppm]", gui_hint="",
             min_len=200, orient="QtCore.Qt.Horizontal", rangeType="float", start=-60, stop=60, step=0.1,
             value=0, widget="counter_slider", comment="Ajustar hasta centrar los lóbulos del espectro"),
-        blk("import_math", "import", 200, 150, imports="import math", comment=""),
-        blk("rtl", "osmosdr_source", 40, 260, args='"rtl=0"', freq0="freq", gain0="rf_gain", if_gain0=20,
-            bb_gain0=20, bw0=0, corr0="ppm", sample_rate="samp_rate", nchan=1, type="fc32", gain_mode0="False",
+        blk("rtl", "osmosdr_source", 40, 260, args='"rtl=0"', freq0="freq", gain0="rf_gain", if_gain0="if_gain",
+            bb_gain0="bb_gain", bw0=0, corr0="ppm", sample_rate="samp_rate", nchan=1, type="fc32", gain_mode0="False",
             dc_offset_mode0=0, iq_balance_mode0=0, clock_source0="", sync="", num_mboards=1, affinity="",
             alias="", maxoutbuf=0, minoutbuf=0, comment="RTL-SDR NooElec"),
         blk("filtro_canal", "low_pass_filter", 260, 260, type="fir_filter_ccf", decim="decim", gain=1,
@@ -128,7 +185,7 @@ def rx():
             gain_omega="0.25*0.175*0.175", mu=0.5, gain_mu=0.175, omega_relative_limit=0.005, affinity="",
             alias="", maxoutbuf=0, minoutbuf=0),
         blk("decisor", "digital_binary_slicer_fb", 1240, 260, affinity="", alias="", maxoutbuf=0, minoutbuf=0),
-        blk("archivo_bits", "blocks_file_sink", 1460, 260, file='"rx_bits.bin"', type="byte", vlen=1, append="False",
+        blk("archivo_bits", "blocks_file_sink", 1460, 260, file='carpeta + "/rx_bits.bin"', type="byte", vlen=1, append="False",
             unbuffered="True", affinity="", alias="", comment="Bits decodificados"),
         blk("a_complejo", "blocks_float_to_complex", 1240, 400, vlen=1, affinity="", alias="", maxoutbuf=0,
             minoutbuf=0, comment="Parte imaginaria sin conectar = 0"),
@@ -151,7 +208,8 @@ def rx():
     c = [("rtl", 0, "filtro_canal", 0), ("rtl", 0, "espectro_rx", 0), ("filtro_canal", 0, "demod_fm", 0),
          ("demod_fm", 0, "sin_dc", 0), ("sin_dc", 0, "reloj", 0), ("sin_dc", 0, "tiempo_demod", 0),
          ("sin_dc", 0, "a_audio", 0), ("a_audio", 0, "audio_m3", 0), ("reloj", 0, "decisor", 0),
-         ("reloj", 0, "a_complejo", 0), ("a_complejo", 0, "constelacion", 0), ("decisor", 0, "archivo_bits", 0)]
+         ("reloj", 0, "a_complejo", 0), ("a_complejo", 0, "constelacion", 0), ("decisor", 0, "archivo_bits", 0),
+         ("rtl", 0, "captura_head", 0), ("captura_head", 0, "archivo_rx", 0)]
     escribir("rx_fsk.grc", "rx_fsk", "RX FSK - RTL-SDR", b, c)
 
 # =================== Osciloscopio: audio M1a/M1b ===================

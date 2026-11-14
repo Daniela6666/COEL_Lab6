@@ -104,6 +104,166 @@ blocks:
     coordinate:
     - 800
     - 12
+- name: nombre_prueba
+  id: variable
+  parameters:
+    value: '"prueba01"'
+    comment: CAMBIAR en cada corrida para no sobrescribir los archivos
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 200
+    - 700
+- name: carpeta
+  id: variable
+  parameters:
+    value: '(lambda p: (os.makedirs(p, exist_ok=True), p)[1])(os.path.join(os.path.expanduser("~"),
+      "lab6_pruebas", nombre_prueba))'
+    comment: 'Carpeta de salida: C:/Users/<usuario>/lab6_pruebas/<nombre_prueba>'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 400
+    - 700
+- name: duracion_captura
+  id: variable
+  parameters:
+    value: '5'
+    comment: Segundos de IQ guardados
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 600
+    - 700
+- name: imports_registro
+  id: import
+  parameters:
+    imports: 'import os
+
+      import time
+
+      import atexit'
+    comment: ''
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 760
+    - 700
+- name: snippet_datos
+  id: snippet
+  parameters:
+    section: main_after_init
+    priority: '0'
+    code: "def _valores():\n    return (f\"  Ganancia RF [dB]: {tb.rf_gain}\\n\"\n\
+      \            f\"  Ganancia IF [dB]: {tb.if_gain}\\n\"\n            f\"  Ganancia\
+      \ BB [dB]: {tb.bb_gain}\\n\"\n            f\"  Correccion de frecuencia [ppm]:\
+      \ {tb.ppm}\\n\")\n_inicio = _valores()\ndef _guardar_datos():\n    with open(os.path.join(tb.carpeta,\
+      \ \"datos_de_la_prueba.txt\"), \"w\", encoding=\"utf-8\") as f:\n        f.write(\"\
+      Prueba: \" + str(tb.nombre_prueba) + \"\\n\")\n        f.write(\"Lado: TX (HackRF)\\\
+      n\")\n        f.write(\"Fecha y hora de inicio: \" + _t0 + \"\\n\")\n      \
+      \  f.write(f\"Frecuencia de muestreo [Hz]: {tb.samp_rate}\\n\")\n        f.write(f\"\
+      Frecuencia central [Hz]: {tb.freq}\\n\")\n        f.write(f\"Baud: {tb.baud}\\\
+      n\")\n        f.write(f\"Desviacion de frecuencia [Hz]: {tb.dev}\\n\")\n   \
+      \     f.write(\"Valores al iniciar:\\n\" + _inicio)\n        f.write(\"Valores\
+      \ al terminar (los deslizadores pueden haber cambiado):\\n\" + _valores())\n\
+      \        f.write(f\"Duracion de la captura IQ [s]: {tb.duracion_captura}\\n\"\
+      )\n        f.write(\"Archivos: tx.cfile (IQ transmitido), datos_de_la_prueba.txt\\\
+      n\")\n_t0 = time.strftime(\"%Y-%m-%d %H:%M:%S\")\n_guardar_datos()\natexit.register(_guardar_datos)\n\
+      print(\"Archivos de la prueba en:\", tb.carpeta)"
+    comment: Escribe datos_de_la_prueba.txt al iniciar y al terminar
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 920
+    - 700
+- name: bb_gain
+  id: variable
+  parameters:
+    value: '20'
+    comment: Ganancia BB del HackRF [dB]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 760
+    - 80
+- name: ppm
+  id: variable
+  parameters:
+    value: '0'
+    comment: Correccion de frecuencia del HackRF [ppm]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 900
+    - 80
+- name: captura_head
+  id: blocks_head
+  parameters:
+    type: complex
+    num_items: int(samp_rate*duracion_captura)
+    vlen: '1'
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    comment: Limita la grabacion a duracion_captura s
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 1520
+    - 360
+- name: archivo_tx
+  id: blocks_file_sink
+  parameters:
+    file: carpeta + "/tx.cfile"
+    type: complex
+    vlen: '1'
+    append: 'False'
+    unbuffered: 'False'
+    affinity: ''
+    alias: ''
+    comment: IQ enviado al HackRF
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 1720
+    - 360
 - name: mensaje_bits
   id: variable
   parameters:
@@ -311,7 +471,8 @@ blocks:
     freq0: freq
     gain0: rf_gain
     if_gain0: if_gain
-    bb_gain0: '20'
+    bb_gain0: bb_gain
+    corr0: ppm
     bw0: '0'
     sample_rate: samp_rate
     nchan: '1'
@@ -420,6 +581,14 @@ connections:
 - - amplitud
   - '0'
   - espectro_tx
+  - '0'
+- - amplitud
+  - '0'
+  - captura_head
+  - '0'
+- - captura_head
+  - '0'
+  - archivo_tx
   - '0'
 metadata:
   file_format: 1

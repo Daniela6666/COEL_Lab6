@@ -40,7 +40,7 @@ Con 3 integrantes: A+E, B+C, D. Cada cambio se registra en la bitácora y se hac
 5. Arrancar primero RX, luego TX. Ajustar ganancias hasta ver dos lóbulos de FSK separados en el espectro.
 6. Verificar en la RX: constelación (los puntos se agrupan en 2 clústeres al tomar la salida del discriminador), mensaje decodificado = mensaje transmitido. Registrar BER observada.
 7. **Segundo punto de medición con osciloscopio — M3** (mensaje demodulado).
-8. Capturar 10 s de IQ en TX y RX (*File Sink*, `complex64`) y guardar en `data/mediciones/tx.cfile`, `rx.cfile` (no se versionan, ver `.gitignore`).
+8. **Los flujogramas guardan solos los archivos** en `C:/Users/<usuario>/lab6_pruebas/<nombre_prueba>/`: TX → `tx.cfile` y `datos_de_la_prueba.txt`; RX → `rx.cfile`, `rx_bits.bin` y `datos_de_la_prueba.txt`. Cambiar la variable `nombre_prueba` en cada corrida (si no, se sobrescribe). Las capturas IQ duran `duracion_captura` = 5 s (80 MB cada una a 2 Msps). Copiar luego los `.cfile` a `data/mediciones/` (no se versionan, ver `.gitignore`).
 
 ### Fase 3 — Mediciones de potencia y ancho de banda (≈ 30 min)
 

@@ -44,6 +44,11 @@ Formato: fecha · quién · qué se hizo · cómo · resultado · archivos. Una 
 - **Alcance de la cifra:** el BER se calcula solo sobre las tramas cuya sincronía se detectó; las tramas con la sincronía dañada no se cuentan, así que es una cota inferior del BER real.
 - **Errores en el uso:** el primer intento falló porque `decodificar_bits.py` no estaba en la carpeta del Escritorio; se copió y funcionó.
 
+### Entrada 8 — Registro automático de archivos de la prueba
+- **Cambio:** `tx_fsk.grc` y `rx_fsk.grc` crean la carpeta `~/lab6_pruebas/<nombre_prueba>/` y guardan: `tx.cfile` (TX), `rx.cfile` y `rx_bits.bin` (RX) y `datos_de_la_prueba.txt` (frecuencia de muestreo, frecuencia central, baud, desviación, ganancias RF/IF/BB y ppm, al iniciar y al terminar, porque los deslizadores pueden cambiar).
+- **Verificación hecha:** las variables se evalúan, la carpeta se crea y el código que escribe `datos_de_la_prueba.txt` se ejecutó con un `tb` simulado (formato correcto). **No** se ha probado dentro de GNU Radio: el bloque *Snippet* (sección *Main - After Init*) y *Head* → *File Sink* deben comprobarse en la primera ejecución.
+- **Nota:** cada captura IQ dura 5 s (`duracion_captura`) para no llenar el disco (2 Msps = 16 MB/s).
+
 ## Plantilla para entradas del laboratorio
 
 ```
@@ -62,7 +67,7 @@ Formato: fecha · quién · qué se hizo · cómo · resultado · archivos. Una 
 | Entrada | Fecha | Integrante | Actividad | Estado |
 |---|---|---|---|---|
 | 7 | 2026-11-12 | | Primer enlace TX→RX y decodificación (BER 1.33e-3) | hecho |
-| 8 | | | M1a/M1b osciloscopio | pendiente |
-| 9 | | | M2/M3 osciloscopio | pendiente |
-| 10 | | | Capturas IQ, potencia y ancho de banda | pendiente |
-| 11 | | | Repetir con otra condición (otro baud o desviación) | pendiente |
+| 9 | | | M1a/M1b osciloscopio | pendiente |
+| 10 | | | M2/M3 osciloscopio | pendiente |
+| 11 | | | Capturas IQ, potencia y ancho de banda | pendiente |
+| 12 | | | Repetir con otra condición (otro baud o desviación) | pendiente |
