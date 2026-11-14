@@ -85,6 +85,7 @@ _t0 = time.strftime("%Y-%m-%d %H:%M:%S")
 _guardar_datos()
 atexit.register(_guardar_datos)
 print("Archivos de la prueba en:", tb.carpeta)'''
+    codigo = codigo.replace("tb.", "self.")   # GRC ejecuta el snippet como snipfcn(self): el flujograma se llama 'self'
     return [
         blk("nombre_prueba", "variable", x0, y0, value='"prueba01"',
             comment="CAMBIAR en cada corrida para no sobrescribir los archivos"),

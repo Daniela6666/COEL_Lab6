@@ -170,22 +170,22 @@ blocks:
   parameters:
     section: main_after_init
     priority: '0'
-    code: "def _valores():\n    return (f\"  Ganancia RF [dB]: {tb.rf_gain}\\n\"\n\
-      \            f\"  Ganancia IF [dB]: {tb.if_gain}\\n\"\n            f\"  Ganancia\
-      \ BB [dB]: {tb.bb_gain}\\n\"\n            f\"  Correccion de frecuencia [ppm]:\
-      \ {tb.ppm}\\n\")\n_inicio = _valores()\ndef _guardar_datos():\n    with open(os.path.join(tb.carpeta,\
+    code: "def _valores():\n    return (f\"  Ganancia RF [dB]: {self.rf_gain}\\n\"\
+      \n            f\"  Ganancia IF [dB]: {self.if_gain}\\n\"\n            f\"  Ganancia\
+      \ BB [dB]: {self.bb_gain}\\n\"\n            f\"  Correccion de frecuencia [ppm]:\
+      \ {self.ppm}\\n\")\n_inicio = _valores()\ndef _guardar_datos():\n    with open(os.path.join(self.carpeta,\
       \ \"datos_de_la_prueba.txt\"), \"w\", encoding=\"utf-8\") as f:\n        f.write(\"\
-      Prueba: \" + str(tb.nombre_prueba) + \"\\n\")\n        f.write(\"Lado: TX (HackRF)\\\
-      n\")\n        f.write(\"Fecha y hora de inicio: \" + _t0 + \"\\n\")\n      \
-      \  f.write(f\"Frecuencia de muestreo [Hz]: {tb.samp_rate}\\n\")\n        f.write(f\"\
-      Frecuencia central [Hz]: {tb.freq}\\n\")\n        f.write(f\"Baud: {tb.baud}\\\
-      n\")\n        f.write(f\"Desviacion de frecuencia [Hz]: {tb.dev}\\n\")\n   \
-      \     f.write(\"Valores al iniciar:\\n\" + _inicio)\n        f.write(\"Valores\
-      \ al terminar (los deslizadores pueden haber cambiado):\\n\" + _valores())\n\
-      \        f.write(f\"Duracion de la captura IQ [s]: {tb.duracion_captura}\\n\"\
-      )\n        f.write(\"Archivos: tx.cfile (IQ transmitido), datos_de_la_prueba.txt\\\
+      Prueba: \" + str(self.nombre_prueba) + \"\\n\")\n        f.write(\"Lado: TX\
+      \ (HackRF)\\n\")\n        f.write(\"Fecha y hora de inicio: \" + _t0 + \"\\\
+      n\")\n        f.write(f\"Frecuencia de muestreo [Hz]: {self.samp_rate}\\n\"\
+      )\n        f.write(f\"Frecuencia central [Hz]: {self.freq}\\n\")\n        f.write(f\"\
+      Baud: {self.baud}\\n\")\n        f.write(f\"Desviacion de frecuencia [Hz]: {self.dev}\\\
+      n\")\n        f.write(\"Valores al iniciar:\\n\" + _inicio)\n        f.write(\"\
+      Valores al terminar (los deslizadores pueden haber cambiado):\\n\" + _valores())\n\
+      \        f.write(f\"Duracion de la captura IQ [s]: {self.duracion_captura}\\\
+      n\")\n        f.write(\"Archivos: tx.cfile (IQ transmitido), datos_de_la_prueba.txt\\\
       n\")\n_t0 = time.strftime(\"%Y-%m-%d %H:%M:%S\")\n_guardar_datos()\natexit.register(_guardar_datos)\n\
-      print(\"Archivos de la prueba en:\", tb.carpeta)"
+      print(\"Archivos de la prueba en:\", self.carpeta)"
     comment: Escribe datos_de_la_prueba.txt al iniciar y al terminar
   states:
     bus_sink: false
