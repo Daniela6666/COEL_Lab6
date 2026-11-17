@@ -230,6 +230,32 @@ def audio():
     c = [("wav", 0, "audio_out", 0), ("wav", 1, "audio_out", 1), ("wav", 0, "vista", 0), ("wav", 1, "vista", 1)]
     escribir("audio_osciloscopio.grc", "audio_osciloscopio", "Audio para osciloscopio (M1a y M1b)", b, c)
 
+# =================== Versiones "simple": solo mostrar la señal, sin grabar ni crear archivos ===================
+QUITAR = {"nombre_prueba", "carpeta", "duracion_captura", "imports_registro", "snippet_datos",
+          "captura_head", "archivo_tx", "archivo_rx"}
+
+def simple(origen, destino, id_, titulo):
+    """Deriva de tx_fsk.grc / rx_fsk.grc una versión sin grabación (sin Snippet, Head ni File Sink de IQ).
+    El RX conserva rx_bits.bin en la carpeta de ejecución, como la primera versión."""
+    with open(os.path.join(OUT, origen), encoding="utf8") as f:
+        doc = yaml.safe_load(f)
+    doc["blocks"] = [b for b in doc["blocks"] if b["name"] not in QUITAR]
+    doc["connections"] = [c for c in doc["connections"] if c[0] not in QUITAR and c[2] not in QUITAR]
+    for b in doc["blocks"]:
+        if b["name"] == "archivo_bits":
+            b["parameters"]["file"] = '"rx_bits.bin"'
+    if origen.startswith("rx"):                                             # el demodulador usa math
+        doc["blocks"].append(blk("import_math", "import", 200, 150, imports="import math", comment=""))
+    doc["options"]["parameters"]["id"] = id_
+    doc["options"]["parameters"]["title"] = titulo
+    nombres = {b["name"] for b in doc["blocks"]}
+    assert all(c[0] in nombres and c[2] in nombres for c in doc["connections"])
+    with open(os.path.join(OUT, destino), "w", encoding="utf8", newline="\n") as f:
+        f.write(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True))
+    print("escrito", os.path.normpath(os.path.join(OUT, destino)))
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     tx(); rx(); audio()
+    simple("tx_fsk.grc", "tx_fsk_simple.grc", "tx_fsk_simple", "TX FSK - HackRF (simple, sin grabar)")
+    simple("rx_fsk.grc", "rx_fsk_simple.grc", "rx_fsk_simple", "RX FSK - RTL-SDR (simple)")

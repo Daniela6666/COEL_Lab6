@@ -143,3 +143,9 @@ Tiempo sugerido: **10–12 minutos** + preguntas. Mensaje central en una frase:
 | El notebook no corre | Mostrar las figuras de `figures/` o abrir el notebook ya ejecutado en GitHub (se ve con gráficas) |
 | No hay fotos del osciloscopio | Mostrar `fsk_11_mensaje_audio.png` (lo que debería verse) y decir que se mide con `audio_osciloscopio.grc` |
 | No hay mediciones de potencia/ancho de banda | Mostrar `sdr_01_espectro_tx_rx.png` (validado con señal sintética: BW −3 dB = 51.8 kHz vs. Carson 52 kHz) y decir que falta medir en radio |
+
+---
+
+## 9. Versiones simples para mostrar la onda en vivo
+
+Para la exposición, si solo quieren **mostrar siempre la señal** sin grabar archivos ni crear carpetas, usen `grc/tx_fsk_simple.grc` y `grc/rx_fsk_simple.grc`. Son los mismos flujogramas sin el bloque que escribe `datos_de_la_prueba.txt` ni la captura IQ de 5 s. El RX simple conserva `rx_bits.bin` en la carpeta desde donde se ejecuta. Para grabar la prueba completa se siguen usando `tx_fsk.grc` y `rx_fsk.grc`.

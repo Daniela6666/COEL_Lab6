@@ -1,0 +1,455 @@
+options:
+  parameters:
+    author: ''
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: tx_fsk_simple
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: TX FSK - HackRF (simple, sin grabar)
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 8
+    - 8
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    value: '2000000'
+    comment: Muestreo SDR [Hz]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 200
+    - 12
+- name: baud
+  id: variable
+  parameters:
+    value: '2000'
+    comment: Símbolos por segundo
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 370
+    - 12
+- name: dev
+  id: variable
+  parameters:
+    value: '25000'
+    comment: Desviación de frecuencia ± [Hz]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 500
+    - 12
+- name: freq
+  id: variable
+  parameters:
+    value: '433920000'
+    comment: Portadora [Hz]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 630
+    - 12
+- name: sps
+  id: variable
+  parameters:
+    value: int(samp_rate/baud)
+    comment: Muestras por bit
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 800
+    - 12
+- name: bb_gain
+  id: variable
+  parameters:
+    value: '20'
+    comment: Ganancia BB del HackRF [dB]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 760
+    - 80
+- name: ppm
+  id: variable
+  parameters:
+    value: '0'
+    comment: Correccion de frecuencia del HackRF [ppm]
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 900
+    - 80
+- name: mensaje_bits
+  id: variable
+  parameters:
+    value: '[1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0,
+      1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0,
+      1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0]'
+    comment: Preámbulo 0xAA 0xAA, sincronía 0x2D 0xD4 y texto ASCII 'COEL'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 200
+    - 80
+- name: rf_gain
+  id: variable_qtgui_range
+  parameters:
+    label: Ganancia RF (TX amp) [dB]
+    gui_hint: ''
+    min_len: '200'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '0'
+    stop: '14'
+    step: '14'
+    value: '0'
+    widget: counter_slider
+    comment: 0 = amplificador apagado. Dejar en 0.
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 560
+    - 80
+- name: if_gain
+  id: variable_qtgui_range
+  parameters:
+    label: Ganancia IF (TX VGA) [dB]
+    gui_hint: ''
+    min_len: '200'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '0'
+    stop: '47'
+    step: '1'
+    value: '0'
+    widget: counter_slider
+    comment: Subir de a poco; con atenuador de 30-40 dB en el cable
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 560
+    - 150
+- name: fuente
+  id: blocks_vector_source_x
+  parameters:
+    type: byte
+    vector: mensaje_bits
+    repeat: 'True'
+    tags: '[]'
+    vlen: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    affinity: ''
+    alias: ''
+    comment: Mensaje repetido
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 40
+    - 260
+- name: repetir
+  id: blocks_repeat
+  parameters:
+    type: byte
+    interp: sps
+    vlen: '1'
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    comment: Cada bit dura sps muestras (NRZ)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 260
+    - 260
+- name: a_float
+  id: blocks_char_to_float
+  parameters:
+    scale: '1'
+    vlen: '1'
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 450
+    - 260
+- name: centrar
+  id: blocks_add_const_vxx
+  parameters:
+    type: float
+    const: '-0.5'
+    vlen: '1'
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    comment: 0/1 -> -0.5/+0.5
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 640
+    - 260
+- name: bipolar
+  id: blocks_multiply_const_vxx
+  parameters:
+    type: float
+    const: '2'
+    vlen: '1'
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    comment: -> -1/+1 (NRZ bipolar, punto M1a)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 840
+    - 260
+- name: modulador_fm
+  id: analog_frequency_modulator_fc
+  parameters:
+    sensitivity: 2*3.141592653589793*dev/samp_rate
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    comment: Desviacion = ±dev para entrada ±1
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 1040
+    - 260
+- name: amplitud
+  id: blocks_multiply_const_vxx
+  parameters:
+    type: complex
+    const: '0.5'
+    vlen: '1'
+    affinity: ''
+    alias: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    comment: Margen frente a la saturación del DAC
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 1300
+    - 260
+- name: hackrf
+  id: osmosdr_sink
+  parameters:
+    args: hackrf
+    freq0: freq
+    gain0: rf_gain
+    if_gain0: if_gain
+    bb_gain0: bb_gain
+    corr0: ppm
+    bw0: '0'
+    sample_rate: samp_rate
+    nchan: '1'
+    type: fc32
+    clock_source0: ''
+    sync: ''
+    num_mboards: '1'
+    affinity: ''
+    alias: ''
+    comment: HackRF One (argumento 'hackrf' segun la guia)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 1520
+    - 240
+- name: espectro_tx
+  id: qtgui_freq_sink_x
+  parameters:
+    name: '"Espectro TX"'
+    type: complex
+    bw: samp_rate
+    fc: freq
+    fftsize: '2048'
+    wintype: window.WIN_BLACKMAN_hARRIS
+    average: '0.2'
+    nconnections: '1'
+    showports: 'False'
+    update_time: '0.1'
+    gui_hint: ''
+    comment: Verificar los dos lóbulos de FSK
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 1300
+    - 420
+- name: tiempo_nrz
+  id: qtgui_time_sink_x
+  parameters:
+    name: '"Bits NRZ (M1a)"'
+    type: float
+    nconnections: '1'
+    size: int(sps*16)
+    srate: samp_rate
+    ymin: '-1.5'
+    ymax: '1.5'
+    update_time: '0.1'
+    gui_hint: ''
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_level: '0'
+    tr_delay: '0'
+    tr_chan: '0'
+    tr_tag: '""'
+    autoscale: 'False'
+    grid: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    rotation: 0
+    state: enabled
+    coordinate:
+    - 840
+    - 420
+connections:
+- - fuente
+  - '0'
+  - repetir
+  - '0'
+- - repetir
+  - '0'
+  - a_float
+  - '0'
+- - a_float
+  - '0'
+  - centrar
+  - '0'
+- - centrar
+  - '0'
+  - bipolar
+  - '0'
+- - bipolar
+  - '0'
+  - modulador_fm
+  - '0'
+- - bipolar
+  - '0'
+  - tiempo_nrz
+  - '0'
+- - modulador_fm
+  - '0'
+  - amplitud
+  - '0'
+- - amplitud
+  - '0'
+  - hackrf
+  - '0'
+- - amplitud
+  - '0'
+  - espectro_tx
+  - '0'
+metadata:
+  file_format: 1
+  grc_version: 3.10.9.2
